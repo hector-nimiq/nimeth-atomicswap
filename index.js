@@ -7,7 +7,7 @@ const {randomBytes} = require('crypto')
 const HTLC_abi = require('./HTLC')
 const HTLC_bin = fs.readFileSync('./HTLC.bin').toString()
 
-const NETWORK = 'test'
+const NETWORK = 'main'
 const TAG = 'Nimiq'
 const $ = {}
 
@@ -47,7 +47,7 @@ function prompt(question) {
 }
 
 function generateHtlcTransaction(sender, recipient, hash, value, timeout) {
-  const hashAlgo = Nimiq.Hash.Algorithm['SHA256']
+  const hashAlgo = Nimiq.Hash.Algorithm.SHA256
   const hashCount = 1
   value = Nimiq.Policy.coinsToSatoshis(value)
   timeout = $.blockchain.height + timeout
@@ -113,7 +113,7 @@ async function nimForEth() {
   let nimRecipient = await prompt('Enter NIM address of recipient: ')
   nimRecipient = Nimiq.Address.fromString(nimRecipient)
   let value = await prompt('Enter NIM amount to send: ')
-  value = parseInt(value)
+  value = parseFloat(value)
   const ethRecipient = await prompt('Enter ETH address to receive funds: ')
   const hashRoot = randomBytes(32)
   const hash = Nimiq.Hash.computeSha256(hashRoot)
@@ -121,6 +121,95 @@ async function nimForEth() {
   const ethContractAddress = await deployEthHTLC(ethWallet.address, ethRecipient, '0x' + Buffer.from(hash).toString('hex'))
   console.log('NIM contract address:', nimContractAddress);
   console.log('ETH contract address:', ethContractAddress);
+  console.log(`Enter 1 if agreed amount of ETH has been sent to ${ethContractAddress}`);
+  let answer = await prompt('Or enter 2 to recover your NIM after the timeout: ')
+  switch (answer) {
+    case '1':
+      await retrieveEth(ethWallet.address, ethContractAddress, '0x' + hashRoot.toString('hex'))
+      break
+    case '2':
+      await recoverNim()
+      break
+  }
+}
+
+async function retrieveEth(sender, account, secret) {
+  const contract = new eth.Contract(HTLC_abi, account)
+  await contract.methods.resolve(secret).send({
+    from: sender,
+    gas: 1e5,
+    gasPrice: 4e9
+  })
+}
+
+function verifyNimContract(account) {
+  if (account.type !== Nimiq.Account.Type.HTLC) {
+    throw 'Account is not a HTLC'
+  }
+  if (account.hashRoot.algorithm !== Nimiq.Hash.Algorithm.SHA256) {
+    throw 'HTLC is not SHA256'
+  }
+  if (account.hashCount !== 1) {
+    throw 'Hash depth is not 1'
+  }
+  console.log(`Balance       | ${account.balance / 1e5} NIM`)
+  console.log(`Sender        | ${account.sender.toUserFriendlyAddress()}`)
+  console.log(`Recipient     | ${account.recipient.toUserFriendlyAddress()}`)
+  console.log(`Locked amount | ${account.totalAmount / 1e5} NIM`)
+  console.log(`Timeout       | ${account.timeout} (~ ${Math.max(0, account.timeout - $.blockchain.height)} mins)`)
+  console.log(`Hash algo     | ${account.hashRoot.algorithm}`)
+  console.log(`Hash depth    | ${account.hashCount}`)
+  console.log(`Hash root     | 0x${account.hashRoot.toHex()}`)
+}
+
+async function verifyEthContract(account) {
+  const contract = new eth.Contract(HTLC_abi, account)
+  const hashSecret = await contract.methods.hashSecret().call()
+  let unlockTime = await contract.methods.unlockTime().call()
+  unlockTime = new Date(unlockTime * 1000)
+  console.log(`Hash root     | ${hashSecret}`)
+  console.log(`Unlock time   | ${unlockTime} (~ ${Math.max(0, Math.floor((unlockTime-Date.now())/6e4))} mins)`)
+  return hashSecret
+}
+
+async function ethForNim() {
+  let nimContractAddress = await prompt('Enter the NIM contract address: ')
+  nimContractAddress = Nimiq.Address.fromString(nimContractAddress)
+  const nimContractAccount = await $.consensus.getAccount(nimContractAddress)
+  const ethContractAccount = await prompt('Enter the ETH contract address: ')
+  console.log('\nNIM contract:');
+  verifyNimContract(nimContractAccount)
+  console.log('\nETH contract:');
+  const ethHashSecret = await verifyEthContract(ethContractAccount)
+  if (ethHashSecret !== `0x${nimContractAccount.hashRoot.toHex()}`) {
+    throw "Hashes don't match"
+  }
+  console.log(`\nIf details are correct then send the agreed amount of ETH to ${ethContractAccount}`);
+  console.log('Waiting for ETH contract to be resolved...');
+  await waitForEthContract(ethContractAccount)
+    .then(secret => resolveNimContract(nimContractAccount, secret))
+    .catch(() => revertEthContract(ethContractAccount))
+}
+
+async function resolveNimContract(account, secret) {
+}
+
+async function waitForEthContract(account) {
+  const contract = new eth.Contract(HTLC_abi, account)
+  let unlockTime = await contract.methods.unlockTime().call()
+  unlockTime = new Date(unlockTime * 1000)
+  return new Promise((resolve, reject) => {
+    const poll = setInterval(async function() {
+      const secret = await contract.methods.secret().call()
+      if (Date.now() > unlockTime) {
+        clearInterval(poll)
+        reject('eth contract timeout')
+      } else if (secret !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
+        clearInterval(poll)
+        resolve(secret)
+      }
+    }, 5e3)
+  })
 }
 
 async function main() {
@@ -136,4 +225,7 @@ async function main() {
   }
 }
 
-main()
+main().catch(err => {
+  console.log(err);
+  process.exit(1)
+})
