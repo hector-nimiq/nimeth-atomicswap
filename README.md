@@ -58,6 +58,7 @@ Otherwise, if 1 hour elapses, you may recover the NIM from its contract by enter
 ```
 Or enter 2 to recover your NIM after the timeout (wait 1 hour): 2
 Enter NIM address to receive funds: NQ22 X270 UE4R 631D AYEY 8K1V 846B 2JP3 72N6
+Waiting for Nimiq block 29343, please wait...
 Waiting for Nimiq transaction [6d3feccc86a07691f475b9141f9956b548b26ec0954369af602663f8946b318e] to confirm, please wait...
 ```
 

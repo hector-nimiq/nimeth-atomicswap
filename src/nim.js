@@ -72,6 +72,18 @@ function sendTransaction(tx) {
   })
 }
 
+function waitForBlock(blockNumber) {
+  return new Promise(resolve => {
+    const id = $.blockchain.on('head-changed', head => {
+      if (head.height >= blockNumber) {
+        $.blockchain.off('head-changed', id)
+        resolve()
+      }
+    })
+    console.log(`Waiting for Nimiq block ${blockNumber}, please wait...`);
+  })
+}
+
 async function deployHTLC(recipient, hash, value) {
   recipient = Nimiq.Address.fromString(recipient)
   const tx = generateHtlcTransaction($.wallet.address, recipient, hash, value, 60)
@@ -140,6 +152,7 @@ async function refundHTLC(address, recipient) {
   tx.proof = new Nimiq.SerialBuffer(1 + sigProof.serializedSize)
   tx.proof.writeUint8(Nimiq.HashedTimeLockedContract.ProofType.TIMEOUT_RESOLVE)
   sigProof.serialize(tx.proof)
+  await waitForBlock(account.timeout)
   await sendTransaction(tx)
 }
 
