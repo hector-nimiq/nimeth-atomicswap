@@ -16,9 +16,10 @@ async function ethForNim() {
   }
   console.log(`\nIf details are correct then send the agreed amount of ETH to ${ethHtlcAddress}`);
   console.log('Waiting for ETH contract to be resolved...');
-  await eth.waitForHTLC(ethHtlcAddress)
-    .then(secret => nim.resolveHTLC(nimHtlcAddress, secret))
+  const secret = await eth.waitForHTLC(ethHtlcAddress)
     .catch(() => eth.refundHTLC(ethHtlcAddress))
+  const nimRecipient = await prompt('Enter the NIM address to send the funds to: ')
+  nim.resolveHTLC(nimHtlcAddress, nimRecipient, nimHashSecret, secret)
 }
 
 module.exports = ethForNim

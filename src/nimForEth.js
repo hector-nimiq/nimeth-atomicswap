@@ -20,13 +20,14 @@ async function nimForEth() {
   console.log('NIM HTLC address:', nimHtlcAddress);
   console.log('ETH HTLC address:', ethHtlcAddress);
   console.log(`Enter 1 if agreed amount of ETH has been sent to ${ethHtlcAddress}`);
-  let answer = await prompt('Or enter 2 to recover your NIM after the timeout: ')
+  let answer = await prompt('Or enter 2 to recover your NIM after the timeout (wait 1 hour): ')
   switch (answer) {
     case '1':
       await eth.resolveHTLC(ethWallet, ethHtlcAddress, '0x' + secret.toString('hex'))
       break
     case '2':
-      await nim.refundHTLC(nimHtlcAddress)
+      nimRecipient = await prompt('Enter NIM address to receive funds: ')
+      await nim.refundHTLC(nimHtlcAddress, nimRecipient)
       break
   }
 }

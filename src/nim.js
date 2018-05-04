@@ -58,24 +58,24 @@ function generateHtlcTransaction(sender, recipient, hash, value, timeout) {
     value, 0, $.blockchain.height + 1, flags, buffer);
 }
 
-function waitForConfirmation(tx) {
-  return new Promise(resolve => {
-    $.consensus.subscribeAccounts([tx.recipient])
+function sendTransaction(tx) {
+  return new Promise(async function(resolve) {
     const id = $.mempool.on('transaction-mined', tx2 => {
       if (tx.equals(tx2)) {
         $.mempool.off('transaction-mined', id)
         resolve()
       }
     })
+    $.consensus.subscribeAccounts([tx.recipient])
+    await $.consensus.relayTransaction(tx)
+    console.log(`Waiting for Nimiq transaction [${tx.hash().toHex()}] to confirm, please wait...`);
   })
 }
 
 async function deployHTLC(recipient, hash, value) {
   const tx = generateHtlcTransaction($.wallet.address, recipient, hash, value, 60)
   tx.proof = Nimiq.SignatureProof.singleSig($.wallet.publicKey, Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())).serialize()
-  await $.consensus.relayTransaction(tx)
-  console.log(`Waiting for Nimiq transaction [${tx.hash().toHex()}] to confirm, please wait...`);
-  await waitForConfirmation(tx)
+  await sendTransaction(tx)
   return tx.recipient.toUserFriendlyAddress()
 }
 
@@ -101,10 +101,40 @@ async function verifyHTLC(address) {
   return `0x${account.hashRoot.toHex()}`
 }
 
-async function resolveHTLC(account, secret) {
+async function resolveHTLC(address, recipient, hashRoot, preImage) {
+  const account = await $.consensus.getAccount(address)
+  const tx = new Nimiq.ExtendedTransaction(
+    address, Nimiq.Account.Type.HTLC,
+    recipient, Nimiq.Account.Type.BASIC,
+    account.balance(), 0,
+    $.blockchain.height + 1,
+    Nimiq.Transaction.Flag.NONE, new Uint8Array(0))
+  const sig = Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())
+  const sigProof = new Nimiq.SignatureProof($.wallet.publicKey, new Nimiq.MerklePath([]), sig)
+  tx.proof = new Nimiq.SerialBuffer(3 + 2 * Nimiq.Hash.SIZE.get(Nimiq.Hash.Algorithm.SHA256) + sigProof.serializedSize)
+  tx.proof.writeUint8(Nimiq.HashedTimeLockedContract.ProofType.REGULAR_TRANSFER)
+  tx.proof.writeUint8(Nimiq.Hash.Algorithm.SHA256)
+  tx.proof.writeUint8(1)
+  Nimiq.Hash.fromHex(hashRoot.slice(2)).serialize(tx.proof)
+  Nimiq.Hash.fromHex(preImage.slice(2)).serialize(tx.proof)
+  sigProof.serialize(tx.proof)
+  await sendTransaction(tx)
 }
 
-async function refundHTLC(account, secret) {
+async function refundHTLC(address, recipient) {
+  const account = await $.consensus.getAccount(address)
+  const tx = new Nimiq.ExtendedTransaction(
+    address, Nimiq.Account.Type.HTLC,
+    recipient, Nimiq.Account.Type.BASIC,
+    account.balance(), 0,
+    $.blockchain.height + 1,
+    Nimiq.Transaction.Flag.NONE, new Uint8Array(0))
+  const sig = Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())
+  const sigProof = new Nimiq.SignatureProof($.wallet.publicKey, new Nimiq.MerklePath([]), sig)
+  tx.proof = new Nimiq.SerialBuffer(1 + sigProof.serializedSize)
+  tx.proof.writeUint8(Nimiq.HashedTimeLockedContract.ProofType.TIMEOUT_RESOLVE)
+  sigProof.serialize(tx.proof)
+  await sendTransaction(tx)
 }
 
 module.exports = {
