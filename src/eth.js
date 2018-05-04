@@ -1,6 +1,6 @@
 const fs = require('fs')
 const Eth = require('web3-eth')
-const eth = new Eth('https://ropsten.infura.io')
+const eth = new Eth('https://mainnet.infura.io')
 const HTLC_abi = require('../build/contracts/HTLC')
 const HTLC_bin = fs.readFileSync(__dirname + '/../build/contracts/HTLC.bin').toString()
 
@@ -41,23 +41,28 @@ async function resolveHTLC(sender, address, secret) {
 
 async function waitForHTLC(address) {
   const contract = new eth.Contract(HTLC_abi, address)
-  let unlockTime = await contract.methods.unlockTime().call()
-  unlockTime = new Date(unlockTime * 1000)
+  const unlockTime = await contract.methods.unlockTime().call()
   return new Promise((resolve, reject) => {
     const poll = setInterval(async function() {
       const secret = await contract.methods.secret().call()
-      if (Date.now() > unlockTime) {
-        clearInterval(poll)
-        reject('eth contract timeout')
-      } else if (secret !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
+      const block = await eth.getBlock('latest')
+      if (secret !== '0x0000000000000000000000000000000000000000000000000000000000000000') {
         clearInterval(poll)
         resolve(secret)
+      } else if (block.timestamp > unlockTime) {
+        clearInterval(poll)
+        reject('ETH HTLC timed out')
       }
     }, 5e3)
   })
 }
 
-async function refundHTLC(address) {
+async function refundHTLC(sender, address) {
+  const contract = new eth.Contract(HTLC_abi, address)
+  await contract.methods.refund().send({
+    from: sender,
+    gas: 1e5
+  })
 }
 
 module.exports = {

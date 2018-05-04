@@ -14,6 +14,7 @@ async function main() {
       await ethForNim()
       break
   }
+  process.exit()
 }
 
 main().catch(err => {

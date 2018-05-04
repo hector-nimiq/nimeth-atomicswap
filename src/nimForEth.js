@@ -23,6 +23,7 @@ async function nimForEth() {
   let answer = await prompt('Or enter 2 to recover your NIM after the timeout (wait 1 hour): ')
   switch (answer) {
     case '1':
+      console.log('Resolving ETH HTLC...');
       await eth.resolveHTLC(ethWallet, ethHtlcAddress, '0x' + secret.toString('hex'))
       break
     case '2':

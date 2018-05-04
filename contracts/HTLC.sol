@@ -36,12 +36,9 @@ contract HTLC {
   }
 
   function refund() public {
-    if (msg.sender != funder) {
-      revert();
-    }
     if (now < unlockTime) {
       revert();
     }
-    msg.sender.transfer(address(this).balance);
+    funder.transfer(address(this).balance);
   }
 }
