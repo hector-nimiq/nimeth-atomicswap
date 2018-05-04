@@ -16,7 +16,7 @@ After starting the program, you should see the following lines:
 Enter 1 to send NIM for ETH, or 2 to receive NIM for ETH: 1
 ```
 
-`NQ53 JTJB HH60 0BPF Y7MD 48QR TL53 VYT0 29YX` is a random but persisted Nimiq wallet that will be used in operations. You will need to fund it with the amount of NIM you intend to swap.
+`NQ53 JTJB HH60 0BPF Y7MD 48QR TL53 VYT0 29YX` (for example) is a random but persisted Nimiq wallet that will be used in operations. You will need to fund the address that your tool gives you with the amount of NIM you intend to swap.
 
 At the prompt type `1` and press `Enter`.
 
@@ -27,7 +27,7 @@ Enter NIM amount to send: 0.00001
 Enter ETH address to receive funds: 0x5062dE01483b56948e2349a69d760f20941906DF
 ```
 
-`0x5062dE01483b56948e2349a69d760f20941906DF` is the ETH wallet managed by the tool. You will need to fund it with a small amount of ETH to cover gas costs.
+`0x5062dE01483b56948e2349a69d760f20941906DF` (for example) is the ETH wallet managed by the tool. You will need to fund the address that your tool gives you with a small amount of ETH to cover gas costs.
 
 Next, enter the NIM address your counterparty gives you. Then the amount of NIM you are trading. Finally the ETH address which you want to receive funds into.
 
@@ -73,7 +73,7 @@ After starting the program, you should see the following lines:
 Enter 1 to send NIM for ETH, or 2 to receive NIM for ETH: 2
 ```
 
-`NQ03 6XDJ ESDT 0JDD ATF9 TB32 R2JY CBT9 19N9` is the Nimiq wallet managed by this tool. You need to give this address to your counterparty.
+`NQ03 6XDJ ESDT 0JDD ATF9 TB32 R2JY CBT9 19N9` (for example) is the Nimiq wallet managed by this tool. You need to give the address that your tool gives you to your counterparty.
 
 At the prompt type `2` and press `Enter`.
 
@@ -83,7 +83,7 @@ Enter the NIM HTLC address: NQ72 M4V3 A9YA UEHL UL5Q LBCX 74XC 7V1N JGQE
 Enter the ETH HTLC address: 0x192E7fb33de67CDC5E17B78bD2650e9BCf2a566e
 ```
 
-`0x6366dD79fB969D69608fD38D0Eb581916b1c514E` is the ETH wallet managed by the tool. You will need to fund it with a small amount of ETH to cover gas costs.
+`0x6366dD79fB969D69608fD38D0Eb581916b1c514E` (for example) is the ETH wallet managed by the tool. You will need to fund the address that your tool gives you with a small amount of ETH to cover gas costs.
 
 Next, enter the NIM HTLC and ETH HTLC addresses that your counterparty gives you.
 
