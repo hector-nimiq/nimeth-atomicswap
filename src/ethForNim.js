@@ -1,11 +1,9 @@
-const Nimiq = require('@nimiq/core/dist/node')
 const nim = require('./nim')
 const eth = require('./eth')
 const prompt = require('./prompt')
 
 async function ethForNim() {
-  let nimHtlcAddress = await prompt('Enter the NIM HTLC address: ')
-  nimHtlcAddress = Nimiq.Address.fromString(nimHtlcAddress)
+  const nimHtlcAddress = await prompt('Enter the NIM HTLC address: ')
   const ethHtlcAddress = await prompt('Enter the ETH HTLC address: ')
   console.log('\nNIM HTLC:');
   const nimHashSecret = await nim.verifyHTLC(nimHtlcAddress)

@@ -73,6 +73,7 @@ function sendTransaction(tx) {
 }
 
 async function deployHTLC(recipient, hash, value) {
+  recipient = Nimiq.Address.fromString(recipient)
   const tx = generateHtlcTransaction($.wallet.address, recipient, hash, value, 60)
   tx.proof = Nimiq.SignatureProof.singleSig($.wallet.publicKey, Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())).serialize()
   await sendTransaction(tx)
@@ -80,6 +81,7 @@ async function deployHTLC(recipient, hash, value) {
 }
 
 async function verifyHTLC(address) {
+  address = Nimiq.Address.fromString(address)
   const account = await $.consensus.getAccount(address)
   if (account.type !== Nimiq.Account.Type.HTLC) {
     throw 'Account is not a HTLC'
@@ -102,11 +104,13 @@ async function verifyHTLC(address) {
 }
 
 async function resolveHTLC(address, recipient, hashRoot, preImage) {
+  address = Nimiq.Address.fromString(address)
+  recipient = Nimiq.Address.fromString(recipient)
   const account = await $.consensus.getAccount(address)
   const tx = new Nimiq.ExtendedTransaction(
     address, Nimiq.Account.Type.HTLC,
     recipient, Nimiq.Account.Type.BASIC,
-    account.balance(), 0,
+    account.balance, 0,
     $.blockchain.height + 1,
     Nimiq.Transaction.Flag.NONE, new Uint8Array(0))
   const sig = Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())
@@ -122,11 +126,13 @@ async function resolveHTLC(address, recipient, hashRoot, preImage) {
 }
 
 async function refundHTLC(address, recipient) {
+  address = Nimiq.Address.fromString(address)
+  recipient = Nimiq.Address.fromString(recipient)
   const account = await $.consensus.getAccount(address)
   const tx = new Nimiq.ExtendedTransaction(
     address, Nimiq.Account.Type.HTLC,
     recipient, Nimiq.Account.Type.BASIC,
-    account.balance(), 0,
+    account.balance, 0,
     $.blockchain.height + 1,
     Nimiq.Transaction.Flag.NONE, new Uint8Array(0))
   const sig = Nimiq.Signature.create($.wallet.keyPair.privateKey, $.wallet.publicKey, tx.serializeContent())

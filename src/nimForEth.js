@@ -8,11 +8,11 @@ async function nimForEth() {
   const ethWallet = eth.addWallet(nim.getWalletPrivateKey())
   console.log('Local ETH wallet address =', ethWallet);
   let nimRecipient = await prompt('Enter NIM address of recipient: ')
-  nimRecipient = Nimiq.Address.fromString(nimRecipient)
   let value = await prompt('Enter NIM amount to send: ')
   value = parseFloat(value)
   const ethRecipient = await prompt('Enter ETH address to receive funds: ')
   const secret = randomBytes(32)
+  console.log('Secret:', '0x' + Buffer.from(secret).toString('hex'));
   let hash = Nimiq.Hash.computeSha256(secret)
   const nimHtlcAddress = await nim.deployHTLC(nimRecipient, hash, value)
   hash = '0x' + Buffer.from(hash).toString('hex')
