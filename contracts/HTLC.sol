@@ -1,7 +1,6 @@
 pragma solidity ^0.4.23;
 
 contract HTLC {
-  address owner;
   address funder;
   address beneficiary;
   bytes32 public secret;
@@ -9,7 +8,6 @@ contract HTLC {
   uint public unlockTime;
 
   constructor(address beneficiary_, bytes32 hashSecret_, uint lockTime) public {
-    owner = msg.sender;
     beneficiary = beneficiary_;
     hashSecret = hashSecret_;
     unlockTime = now + lockTime * 1 minutes;
@@ -25,9 +23,6 @@ contract HTLC {
   }
 
   function resolve(bytes32 secret_) public {
-    if (msg.sender != owner) {
-      revert();
-    }
     if (sha256(secret_) != hashSecret) {
       revert();
     }

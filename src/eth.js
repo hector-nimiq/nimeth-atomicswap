@@ -16,7 +16,7 @@ async function deployHTLC(sender, recipient, hash) {
     arguments: [recipient, hash, 30]
   }).send({
     from: sender,
-    gas: 1e6
+    gas: 4e5
   })
   return contract.options.address
 }
@@ -35,7 +35,7 @@ async function resolveHTLC(sender, address, secret) {
   const contract = new eth.Contract(HTLC_abi, address)
   await contract.methods.resolve(secret).send({
     from: sender,
-    gas: 1e5
+    gas: 5e4
   })
 }
 
@@ -61,7 +61,7 @@ async function refundHTLC(sender, address) {
   const contract = new eth.Contract(HTLC_abi, address)
   await contract.methods.refund().send({
     from: sender,
-    gas: 1e5
+    gas: 5e4
   })
 }
 
