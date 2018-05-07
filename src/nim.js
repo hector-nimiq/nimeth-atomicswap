@@ -74,6 +74,9 @@ function sendTransaction(tx) {
 
 function waitForBlock(blockNumber) {
   return new Promise(resolve => {
+    if ($.blockchain.height >= blockNumber) {
+      return resolve()
+    }
     const id = $.blockchain.on('head-changed', head => {
       if (head.height >= blockNumber) {
         $.blockchain.off('head-changed', id)
